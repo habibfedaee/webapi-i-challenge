@@ -2,7 +2,7 @@
 
 // require the express npm module, needs to be added to the project using 'npm install express'
 const express = require("express");
-const db = require("./data/db.js");
+const UsersDB = require("./data/db.js");
 
 // creates an expressa application using the express module
 const server = express();
@@ -57,10 +57,85 @@ server.delete("/hobbits/:id", (req, res) => {
 });
 
 //---------------------- users endpoint ----------------------
-server.get("/users", async (req, res) => {
-  const users = await db.find();
-  res.status(200).json(users);
+server.get("/users", (req, res) => {
+  // works
+  UsersDB.find(req.query)
+    .then((users) => {
+      if (!users) {
+        res.status(404);
+      } else {
+        res.status(200).json(users);
+      }
+    })
+    .catch((error) => {
+      res
+        .status(500)
+        .json({ message: "The users information could not be retrieved." });
+    });
 });
+
+server.get("/users/:id", (req, res) => {
+  // works
+  const id = req.params.id;
+  UsersDB.findById(id)
+    .then((user) => {
+      if (!user) {
+        res
+          .status(404)
+          .json({ message: "The user with the specified ID does not exist." });
+      } else {
+        res.status(200).json(user);
+      }
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: "The user information could not be retrieved.",
+        error: error.message,
+        stack: error.stack,
+      });
+    });
+});
+
+server.post("/users", (req, res) => {
+  // works
+  const user = req.body;
+  if (!user.name || !user.bio) {
+    res.status(400).json({ message: "Please provide name and bio" });
+  } else {
+    UsersDB.insert(user)
+      .then((createdUser) => {
+        res.status(201).json(createdUser);
+      })
+      .catch((error) => {
+        res.status(500).json({
+          message: "There was an error while saving the user",
+          error: error.message,
+          stack: error.stack,
+        });
+      });
+  }
+});
+
+server.put("/users/:id", async (req, res) => {
+  const possibleUser = await UsersDB.findById(req.params.id);
+  const user = req.body;
+  try {
+    if (!possibleUser) {
+      res.status(404).json({
+        message: "The post with the specified ID does not exist",
+      });
+    } else {
+      const updatedUser = UsersDB.update(req.params.id, user);
+      res.status(200).json(updatedUser);
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "The user information could not be retrieved." });
+  }
+});
+
+server.delete("/users/:id", (req, res) => {});
 
 // once the server is fully configured we can have it 'listen' for connections on a particular 'port'
 // the callback function passed as the second argument will run once the server starts
