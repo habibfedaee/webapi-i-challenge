@@ -57,7 +57,7 @@ server.delete("/hobbits/:id", (req, res) => {
 });
 
 //---------------------- users endpoint ----------------------
-server.get("/users", (req, res) => {
+server.get("/api/users", (req, res) => {
   // works
   UsersDB.find(req.query)
     .then((users) => {
@@ -74,7 +74,7 @@ server.get("/users", (req, res) => {
     });
 });
 
-server.get("/users/:id", (req, res) => {
+server.get("/api/users/:id", (req, res) => {
   // works
   const id = req.params.id;
   UsersDB.findById(id)
@@ -96,7 +96,7 @@ server.get("/users/:id", (req, res) => {
     });
 });
 
-server.post("/users", (req, res) => {
+server.post("/api/users", (req, res) => {
   // works
   const user = req.body;
   if (!user.name || !user.bio) {
@@ -116,16 +116,21 @@ server.post("/users", (req, res) => {
   }
 });
 
-server.put("/users/:id", async (req, res) => {
+server.put("/api/users/:id", async (req, res) => {
+  // works
   const possibleUser = await UsersDB.findById(req.params.id);
   const user = req.body;
   try {
     if (!possibleUser) {
       res.status(404).json({
-        message: "The post with the specified ID does not exist",
+        message: "The user with the specified ID does not exist",
+      });
+    } else if (!user.name || !user.bio) {
+      res.status(400).json({
+        message: "Please provide name and bio for the user",
       });
     } else {
-      const updatedUser = UsersDB.update(req.params.id, user);
+      const updatedUser = await UsersDB.update(req.params.id, user);
       res.status(200).json(updatedUser);
     }
   } catch (error) {
@@ -135,7 +140,20 @@ server.put("/users/:id", async (req, res) => {
   }
 });
 
-server.delete("/users/:id", (req, res) => {});
+server.delete("/api/users/:id", async (req, res) => {
+  // works
+  UsersDB.remove(req.params.id).then((count) => {
+    if (count > 0) {
+      res.status(200).json({
+        message: "User successfully deleted!",
+      });
+    } else {
+      res.status(404).json({
+        message: "The user with the specified ID does not exist",
+      });
+    }
+  });
+});
 
 // once the server is fully configured we can have it 'listen' for connections on a particular 'port'
 // the callback function passed as the second argument will run once the server starts
